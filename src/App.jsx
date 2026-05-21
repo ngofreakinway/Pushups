@@ -4,6 +4,7 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import PersonCard from './components/PersonCard'
 import History from './components/History'
 import SettingsModal from './components/SettingsModal'
+import ClearFundModal from './components/ClearFundModal'
 
 const localDateKey = () => {
   const d = new Date()
@@ -25,6 +26,7 @@ export default function App() {
   const [todayData, setTodayData] = useState(null)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [showSettings, setShowSettings] = useState(false)
+  const [showClearFund, setShowClearFund] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const dateKey = localDateKey()
@@ -59,6 +61,12 @@ export default function App() {
     }
   }
 
+  const saveSets = async (personId, sets) => {
+    await setDoc(doc(db, 'days', dateKey), {
+      [`${personId}Sets`]: sets,
+    }, { merge: true })
+  }
+
   const updateTarget = async newTarget => {
     await setDoc(doc(db, 'meta', 'settings'), { target: newTarget }, { merge: true })
   }
@@ -66,6 +74,11 @@ export default function App() {
   const adjustFund = async delta => {
     const next = Math.max(0, settings.fundTotal + delta)
     await setDoc(doc(db, 'meta', 'settings'), { fundTotal: next }, { merge: true })
+  }
+
+  const clearFund = async () => {
+    await setDoc(doc(db, 'meta', 'settings'), { fundTotal: 0 }, { merge: true })
+    setShowClearFund(false)
   }
 
   const dateLabel = new Date().toLocaleDateString('en-US', {
@@ -96,10 +109,17 @@ export default function App() {
             <div className="text-3xl font-bold">{settings.target}</div>
             <div className="text-xs text-gray-400 mt-1">push-ups today</div>
           </div>
-          <div className="bg-gray-800 rounded-2xl p-4 text-center">
+          <button
+            onClick={() => settings.fundTotal > 0 && setShowClearFund(true)}
+            className={`bg-gray-800 rounded-2xl p-4 text-center transition-colors ${
+              settings.fundTotal > 0 ? 'hover:bg-gray-700 active:bg-gray-600 cursor-pointer' : 'cursor-default'
+            }`}
+          >
             <div className="text-3xl font-bold text-green-400">${settings.fundTotal}</div>
-            <div className="text-xs text-gray-400 mt-1">in the fund</div>
-          </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {settings.fundTotal > 0 ? 'tap to use for dinner' : 'in the fund'}
+            </div>
+          </button>
         </div>
 
         {/* Person cards */}
@@ -109,7 +129,10 @@ export default function App() {
               key={person.id}
               person={person}
               status={todayData?.[`${person.id}Status`] || 'pending'}
+              sets={todayData?.[`${person.id}Sets`] || []}
+              target={settings.target}
               onMark={status => markStatus(person.id, status)}
+              onSaveSets={sets => saveSets(person.id, sets)}
             />
           ))}
         </div>
@@ -148,6 +171,14 @@ export default function App() {
           currentTarget={settings.target}
           onSave={updateTarget}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {showClearFund && (
+        <ClearFundModal
+          fundTotal={settings.fundTotal}
+          onConfirm={clearFund}
+          onClose={() => setShowClearFund(false)}
         />
       )}
     </div>

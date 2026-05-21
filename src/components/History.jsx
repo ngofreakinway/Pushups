@@ -4,6 +4,14 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
 
 const ICON = { complete: '✅', missed: '❌', pending: '⏳' }
 
+function SetsLabel({ sets }) {
+  if (!sets || sets.length === 0) return null
+  const total = sets.reduce((a, b) => a + b, 0)
+  return (
+    <span className="text-xs text-gray-600 ml-1" title={sets.join(' + ')}>({total})</span>
+  )
+}
+
 export default function History() {
   const [days, setDays] = useState([])
 
@@ -35,13 +43,15 @@ export default function History() {
             >
               <span className="text-sm text-gray-300">{label}</span>
               <div className="flex gap-4 text-sm">
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-400">G</span>
+                <span className="flex items-center">
+                  <span className="text-gray-400 mr-1">G</span>
                   <span>{ICON[gs]}</span>
+                  <SetsLabel sets={day.gerardSets} />
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-400">L</span>
+                <span className="flex items-center">
+                  <span className="text-gray-400 mr-1">L</span>
                   <span>{ICON[ls]}</span>
+                  <SetsLabel sets={day.leoSets} />
                 </span>
               </div>
             </div>

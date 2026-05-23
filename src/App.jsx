@@ -45,15 +45,10 @@ export default function App() {
   const markStatus = async (personId, newStatus) => {
     const prevStatus = todayData?.[`${personId}Status`] || 'pending'
     if (prevStatus === newStatus) return
-
     let fundDelta = 0
     if (newStatus === 'missed') fundDelta = 20
     else if (prevStatus === 'missed') fundDelta = -20
-
-    await setDoc(doc(db, 'days', dateKey), {
-      [`${personId}Status`]: newStatus,
-    }, { merge: true })
-
+    await setDoc(doc(db, 'days', dateKey), { [`${personId}Status`]: newStatus }, { merge: true })
     if (fundDelta !== 0) {
       await setDoc(doc(db, 'meta', 'settings'), {
         fundTotal: Math.max(0, settings.fundTotal + fundDelta),
@@ -62,9 +57,7 @@ export default function App() {
   }
 
   const saveSets = async (personId, sets) => {
-    await setDoc(doc(db, 'days', dateKey), {
-      [`${personId}Sets`]: sets,
-    }, { merge: true })
+    await setDoc(doc(db, 'days', dateKey), { [`${personId}Sets`]: sets }, { merge: true })
   }
 
   const updateTarget = async newTarget => {
@@ -72,8 +65,9 @@ export default function App() {
   }
 
   const adjustFund = async delta => {
-    const next = Math.max(0, settings.fundTotal + delta)
-    await setDoc(doc(db, 'meta', 'settings'), { fundTotal: next }, { merge: true })
+    await setDoc(doc(db, 'meta', 'settings'), {
+      fundTotal: Math.max(0, settings.fundTotal + delta),
+    }, { merge: true })
   }
 
   const clearFund = async () => {
@@ -87,43 +81,68 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-white text-lg">Loading...</div>
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle">
+          Loading...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="max-w-md mx-auto px-4 pb-16">
+    <div className="min-h-screen bg-canvas text-ink">
+      <div className="max-w-md mx-auto px-5 pb-24">
 
         {/* Header */}
-        <div className="pt-14 pb-6 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight">Push-up Pact</h1>
-          <p className="text-gray-400 mt-1 text-sm">{dateLabel}</p>
+        <div className="pt-14 pb-10 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-3">
+            Daily Tracker
+          </p>
+          <h1 className="text-[40px] font-bold leading-[1.19] tracking-[-1px] text-ink mb-2">
+            Push-up Pact
+          </h1>
+          <p className="text-sm font-medium leading-[1.71] text-ink-muted">{dateLabel}</p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-gray-800 rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{settings.target}</div>
-            <div className="text-xs text-gray-400 mt-1">push-ups today</div>
+        <div className="grid grid-cols-2 gap-3 mb-10">
+          <div className="bg-surface-1 border border-hairline rounded-xl p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-3">
+              Today's Goal
+            </p>
+            <p className="text-[40px] font-semibold leading-[1.19] tracking-[-1px] text-ink">
+              {settings.target}
+            </p>
+            <p className="text-[13px] font-medium text-ink-subtle mt-1">push-ups</p>
           </div>
+
           <button
             onClick={() => settings.fundTotal > 0 && setShowClearFund(true)}
-            className={`bg-gray-800 rounded-2xl p-4 text-center transition-colors ${
-              settings.fundTotal > 0 ? 'hover:bg-gray-700 active:bg-gray-600 cursor-pointer' : 'cursor-default'
+            className={`bg-surface-1 border border-hairline rounded-xl p-5 text-left transition-colors ${
+              settings.fundTotal > 0
+                ? 'hover:bg-surface-2 cursor-pointer'
+                : 'cursor-default'
             }`}
           >
-            <div className="text-3xl font-bold text-green-400">${settings.fundTotal}</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {settings.fundTotal > 0 ? 'tap to use for dinner' : 'in the fund'}
-            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-3">
+              Dinner Fund
+            </p>
+            <p className={`text-[40px] font-semibold leading-[1.19] tracking-[-1px] ${
+              settings.fundTotal > 0 ? 'text-product-vault' : 'text-ink'
+            }`}>
+              ${settings.fundTotal}
+            </p>
+            <p className="text-[13px] font-medium text-ink-subtle mt-1">
+              {settings.fundTotal > 0 ? 'tap to use' : 'no misses yet'}
+            </p>
           </button>
         </div>
 
-        {/* Person cards */}
-        <div className="flex flex-col gap-4 mb-8">
+        {/* Today */}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-4">
+          Today
+        </p>
+        <div className="flex flex-col gap-4 mb-10">
           {PEOPLE.map(person => (
             <PersonCard
               key={person.id}
@@ -140,27 +159,32 @@ export default function App() {
         {/* History */}
         <History />
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 mt-6">
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-full py-3 rounded-2xl bg-gray-800 text-gray-300 text-sm font-semibold hover:bg-gray-700 active:bg-gray-600 transition-colors"
-          >
-            Change daily target
-          </button>
-          <div className="flex gap-3">
+        {/* Settings */}
+        <div className="mt-10 border-t border-hairline pt-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-4">
+            Settings
+          </p>
+          <div className="flex flex-col gap-3">
             <button
-              onClick={() => adjustFund(-20)}
-              className="flex-1 py-3 rounded-2xl bg-gray-800 text-gray-400 text-sm font-semibold hover:bg-gray-700 active:bg-gray-600 transition-colors"
+              onClick={() => setShowSettings(true)}
+              className="w-full py-[10px] px-[18px] rounded-lg bg-surface-2 text-ink text-sm font-semibold leading-[1.29] hover:bg-surface-3 transition-colors text-left"
             >
-              Fund -$20
+              Change daily target
             </button>
-            <button
-              onClick={() => adjustFund(20)}
-              className="flex-1 py-3 rounded-2xl bg-gray-800 text-gray-400 text-sm font-semibold hover:bg-gray-700 active:bg-gray-600 transition-colors"
-            >
-              Fund +$20
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => adjustFund(-20)}
+                className="flex-1 py-[10px] px-[18px] rounded-lg bg-surface-2 text-ink-muted text-sm font-semibold leading-[1.29] hover:bg-surface-3 transition-colors"
+              >
+                Fund −$20
+              </button>
+              <button
+                onClick={() => adjustFund(20)}
+                className="flex-1 py-[10px] px-[18px] rounded-lg bg-surface-2 text-ink-muted text-sm font-semibold leading-[1.29] hover:bg-surface-3 transition-colors"
+              >
+                Fund +$20
+              </button>
+            </div>
           </div>
         </div>
 
@@ -173,7 +197,6 @@ export default function App() {
           onClose={() => setShowSettings(false)}
         />
       )}
-
       {showClearFund && (
         <ClearFundModal
           fundTotal={settings.fundTotal}

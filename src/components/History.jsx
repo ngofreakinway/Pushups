@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import { db } from '../firebase'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 
-const ICON = { complete: '✅', missed: '❌', pending: '⏳' }
+const STATUS_LABEL = { complete: 'Done', missed: 'Miss', pending: '—' }
+const STATUS_COLOR = {
+  complete: 'text-product-nomad',
+  missed: 'text-product-consul',
+  pending: 'text-ink-subtle',
+}
 
-function SetsLabel({ sets }) {
+function SetsTotal({ sets }) {
   if (!sets || sets.length === 0) return null
   const total = sets.reduce((a, b) => a + b, 0)
-  return (
-    <span className="text-xs text-gray-600 ml-1" title={sets.join(' + ')}>({total})</span>
-  )
+  return <span className="text-ink-subtle"> ({total})</span>
 }
 
 export default function History() {
@@ -26,11 +29,11 @@ export default function History() {
 
   return (
     <div>
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.6px] text-ink-subtle mb-4">
         History
-      </h2>
-      <div className="flex flex-col gap-2">
-        {days.map(day => {
+      </p>
+      <div className="bg-surface-1 border border-hairline rounded-xl overflow-hidden">
+        {days.map((day, i) => {
           const label = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', {
             weekday: 'short', month: 'short', day: 'numeric',
           })
@@ -39,19 +42,21 @@ export default function History() {
           return (
             <div
               key={day.date}
-              className="bg-gray-800 rounded-xl px-4 py-3 flex items-center justify-between"
+              className={`flex items-center justify-between px-5 py-3.5 ${
+                i < days.length - 1 ? 'border-b border-hairline-soft' : ''
+              }`}
             >
-              <span className="text-sm text-gray-300">{label}</span>
-              <div className="flex gap-4 text-sm">
-                <span className="flex items-center">
-                  <span className="text-gray-400 mr-1">G</span>
-                  <span>{ICON[gs]}</span>
-                  <SetsLabel sets={day.gerardSets} />
+              <span className="text-[13px] font-medium text-ink-muted">{label}</span>
+              <div className="flex gap-5 text-[13px] font-semibold">
+                <span>
+                  <span className="text-ink-subtle">G </span>
+                  <span className={STATUS_COLOR[gs]}>{STATUS_LABEL[gs]}</span>
+                  <SetsTotal sets={day.gerardSets} />
                 </span>
-                <span className="flex items-center">
-                  <span className="text-gray-400 mr-1">L</span>
-                  <span>{ICON[ls]}</span>
-                  <SetsLabel sets={day.leoSets} />
+                <span>
+                  <span className="text-ink-subtle">L </span>
+                  <span className={STATUS_COLOR[ls]}>{STATUS_LABEL[ls]}</span>
+                  <SetsTotal sets={day.leoSets} />
                 </span>
               </div>
             </div>
